@@ -16,3 +16,14 @@ h1,h2,h3 {
     padding: 1em;
     z-index: 100;
 }
+
+.season-btn.current {
+    font-weight: 600;
+}
+
+.season-btn.current::before {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    content: "\f84a";
+    margin-right: 0.5rem;
+}

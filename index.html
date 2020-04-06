@@ -12,10 +12,20 @@
             <div id="map" style="height:65vh; width:100%;"></div>
             <div class="row mt-3">
                 <div class="col-2 text-center" style="flex-direction: row">
-<!--                    <h5><i class="fa fa-biking"></i> Season</h5>-->
-                    <button id="btn2019" class="col-12 btn btn-outline-secondary btn-lg season-btn" onclick="changeYear(2019)">2019</button>
-                    <button id="btn2018" class="mt-2 col-12 btn btn-outline-secondary btn-lg season-btn" onclick="changeYear(2018)">2018</button>
-                    <button id="btn2017" class="mt-2 col-12 btn btn-outline-secondary btn-lg season-btn" onclick="changeYear(2017)">2017</button>
+                    <!--                    <h5><i class="fa fa-biking"></i> Season</h5>-->
+                    <button class="col-12 btn btn-outline-secondary btn-lg season-btn" id="btn2019"
+                            onclick="changeYear(2019)">2019
+                    </button>
+                    <button class="mt-2 col-12 btn btn-outline-secondary btn-lg season-btn" id="btn2018"
+                            onclick="changeYear(2018)">2018
+                    </button>
+                    <button class="mt-2 col-12 btn btn-outline-secondary btn-lg season-btn" id="btn2017"
+                            onclick="changeYear(2017)">2017
+                    </button>
+                    <div class="mt-2 col-12 custom-control custom-switch">
+                        <input checked class="custom-control-input" id="popupSwitch" type="checkbox">
+                        <label class="custom-control-label" for="popupSwitch">Show labels</label>
+                    </div>
                 </div>
                 <div class="col-10 pl-0">
                     <div id="graph" style="background-color: #343434; height: 27.5vh; width: 100%;"></div>
@@ -40,8 +50,7 @@
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
       integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 
-<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
-        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"
         crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
         integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
@@ -72,7 +81,7 @@
 
 <script>
     // Source: https://digitransit.fi/en/developers/apis/3-map-api/background-map/
-    var map = L.map('map').setView([60.192059, 24.945831], 13);
+    const map = L.map('map', {closePopupOnClick: false}).setView([60.192059, 24.945831], 13);
 
     // Show the HSL map background
     L.tileLayer('https://cdn.digitransit.fi/map/v1/{id}/{z}/{x}/{y}.png', {

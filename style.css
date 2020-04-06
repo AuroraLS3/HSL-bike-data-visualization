@@ -27,3 +27,11 @@ h1,h2,h3 {
     content: "\f84a";
     margin-right: 0.5rem;
 }
+
+/*
+    Fix for all rows not showing
+    https://datatables.net/forums/discussion/comment/85793/#Comment_85793
+*/
+.dataTables_scrollBody {
+    min-height: 80vh;
+}

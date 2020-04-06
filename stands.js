@@ -4,7 +4,9 @@ const state = {
     filteredIDs: [],
     selectedIDs: [],
     previousFilterLength: 0,
-    previousSelectLength: -1
+    previousSelectLength: -1,
+    ctrlDown: false,
+    showPopups: true
 };
 const style = {};
 
@@ -28,6 +30,19 @@ style.hiddenCircle = {
     opacity: 0.7,
     radius: 20
 };
+
+// Keep ctrl key status for selection differences
+document.addEventListener("keydown", event => {
+    if (event.key === 'Control') state.ctrlDown = true;
+});
+document.addEventListener("keyup", event => {
+    if (event.key === 'Control') state.ctrlDown = false;
+});
+
+$('#popupSwitch').click(event => {
+    state.showPopups = $('#popupSwitch').is(":checked");
+    updateMapView();
+});
 
 function loadStandsOfYear(year) {
     state.stands = {};
@@ -95,8 +110,8 @@ function loadStands(data, error) {
     ];
     const correctionEntries = {
         '0529': {y: 60.194992, x: 25.115572},
-        '0516': {name: 'Vuosaari (M) It\u00e4'},
-        '0507': {name: 'Vuosaari (M) L\u00e4nsi'}
+        '0516': {name: 'Vuosaari (M) / it\u00e4'},
+        '0507': {name: 'Vuosaari (M) / l\u00e4nsi'}
     };
     const byId = state.standsById;
     for (let object of asObjects) {
@@ -127,6 +142,31 @@ function loadStands(data, error) {
             byId[id].push(newStand);
         }
     }
+
+    map.on('boxzoomend', function (event) {
+        const bounds = event.boxZoomBounds;
+        if (!state.ctrlDown) {
+            state.table.rows((idx, data, node) => {
+                return state.selectedIDs.includes(data.id);
+            }).deselect();
+        }
+        const selected = [];
+        const deselected = [];
+        for (let id of Object.keys(state.stands)) {
+            if (bounds.contains(state.stands[id].marker.getLatLng())) {
+                if (state.selectedIDs.includes(id)) {
+                    deselected.push(id);
+                } else {
+                    selected.push(id);
+                }
+            }
+        }
+        console.log('selecting', selected);
+        console.log('deselecting', deselected);
+        selectMany(selected);
+        deselectMany(deselected);
+    });
+
     // Load first of each.
     createTable();
     changeYear(2019);
@@ -165,6 +205,9 @@ function updateMapView() {
                     .setRadius(stand.marker.options.radius);
             }
         }
+        if (!state.showPopups) {
+            stand.marker.closePopup();
+        }
     }
     if (previousSelectLength !== selectedIDs.length) {
         var bounds = new L.LatLngBounds(pointLatLngs);
@@ -179,9 +222,11 @@ function createTable() {
     const table = $('#stands').DataTable({
         responsive: true,
         select: true,
+        scroller: true,
+        deferRender: false,
         scrollY: "80vh",
         scrollCollapse: true,
-        paging: false,
+        paging: true,
         columns: [{title: '<i class="fa fa-bicycle"></i> Bike Stands', data: 'name'}],
         data: [],
         order: [[0, "asc"]]
@@ -207,14 +252,37 @@ function createTable() {
     });
     table.on('deselect', function (e, dt, type, indexes) {
         if (type === 'row') {
-            var toRemove = table.rows(indexes).data().pluck('id')
-                .toArray();
-            state.selectedIDs = state.selectedIDs.filter(function (id) {
-                return !toRemove.includes(id);
-            });
+            table.rows(indexes).data().pluck('id').toArray()
+                .forEach(id => { // Remove from array
+                    state.selectedIDs.splice(state.selectedIDs.indexOf(id), 1);
+                });
             updateMapView();
         }
     });
+}
+
+function select(id) {
+    state.table.row((idx, data, node) => {
+        return data.id === id;
+    }).select().scrollTo();
+}
+
+function selectMany(ids) {
+    state.table.rows((idx, data, node) => {
+        return ids.includes(data.id);
+    }).select();
+}
+
+function deselect(id) {
+    state.table.row((idx, data, node) => {
+        return data.id === id;
+    }).deselect();
+}
+
+function deselectMany(ids) {
+    state.table.rows((idx, data, node) => {
+        return ids.includes(data.id);
+    }).deselect();
 }
 
 function changeYear(year) {
@@ -226,10 +294,38 @@ function changeYear(year) {
     loadStandsOfYear(year);
 
     // Draw bike stands on the map
-    for (let key of Object.keys(state.stands)) {
-        const stand = state.stands[key];
+    for (let id of Object.keys(state.stands)) {
+        const stand = state.stands[id];
+
+        const markerContent = '<div>' + stand.id + ' : ' + stand.name + '</div>';
         stand.marker = L.circle([stand.y, stand.x], style.visibleCircle)
-            .bindPopup(stand.id + " : " + stand.name, {autoClose: false}).addTo(map);
+            .bindPopup(markerContent, {autoClose: false, closeButton: false})
+            .addTo(map);
+
+        // Links map click events to the selection state
+        // Ctrl behavior is same on both table and map to reduce confusion
+        stand.marker.on('click', (e) => {
+            if (state.ctrlDown) {
+                if (state.selectedIDs.includes(id)) {
+                    deselect(id);
+                } else {
+                    select(id);
+                }
+            } else {
+                const selected = state.selectedIDs.includes(id);
+                const selectedMany = state.selectedIDs.length > 1;
+                if (selectedMany) {
+                    state.table.rows((idx, data, node) => {
+                        return state.selectedIDs.includes(data.id);
+                    }).deselect();
+                }
+                if (selected && !selectedMany) {
+                    deselect(id);
+                } else {
+                    select(id);
+                }
+            }
+        });
     }
 
     const table = state.table;

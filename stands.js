@@ -3,6 +3,7 @@ const state = {
     standsById: {},
     filteredIDs: [],
     selectedIDs: [],
+    missingSelected: [],
     previousFilterLength: 0,
     previousSelectLength: -1,
     ctrlDown: false,
@@ -149,6 +150,8 @@ function loadStands(data, error) {
             state.table.rows((idx, data, node) => {
                 return state.selectedIDs.includes(data.id);
             }).deselect();
+            // Remove selected from another year that would now be deselected.
+            state.missingSelected = [];
         }
         const selected = [];
         const deselected = [];
@@ -247,6 +250,8 @@ function createTable() {
                 .toArray().forEach(function (id) {
                 state.selectedIDs.push(id);
             });
+            // Remove selected from another year that would now be deselected.
+            if (state.selectedIDs.length === 1) state.missingSelected = [];
             updateMapView();
         }
     });
@@ -314,11 +319,10 @@ function changeYear(year) {
             } else {
                 const selected = state.selectedIDs.includes(id);
                 const selectedMany = state.selectedIDs.length > 1;
-                if (selectedMany) {
-                    state.table.rows((idx, data, node) => {
-                        return state.selectedIDs.includes(data.id);
-                    }).deselect();
-                }
+                state.table.rows((idx, data, node) => {
+                    return state.selectedIDs.includes(data.id);
+                }).deselect();
+                state.missingSelected = []; // Remove selected from another year that would now be deselected.
                 if (selected && !selectedMany) {
                     deselect(id);
                 } else {
@@ -334,6 +338,21 @@ function changeYear(year) {
         return {...state.stands[id]}
     }));
     table.draw();
+
+    // Sort out selection if missing some selected items from another year
+    state.missingSelected.forEach(id => state.selectedIDs.push(id));
+    state.missingSelected = [];
+
+    const toSelect = [];
+    state.selectedIDs.forEach(id => {
+        if (state.stands[id]) {
+            toSelect.push(id);
+        } else {
+            state.missingSelected.push(id);
+        }
+    });
+    state.selectedIDs = [];
+    selectMany(toSelect);
 
     state.previousSelectLength = -1;
     updateMapView();

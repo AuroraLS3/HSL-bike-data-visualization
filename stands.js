@@ -40,7 +40,7 @@ document.addEventListener("keyup", event => {
     if (event.key === 'Control') state.ctrlDown = false;
 });
 
-$('#popupSwitch').click(event => {
+$('#popupSwitch').click(() => {
     state.showPopups = $('#popupSwitch').is(":checked");
     updateMapView();
 });
@@ -101,6 +101,10 @@ function loadCSV(bytes) {
 }
 
 function loadStands(data, error) {
+    if (error) {
+        $('#map').replaceWith(`<div class="alert alert-danger" role="alert">Failed to load data: ` + error + '</div>');
+        return;
+    }
     const asObjects = loadCSV(data);
 
     const invalidIDs = [
@@ -144,60 +148,136 @@ function loadStands(data, error) {
         }
     }
 
-    map.on('boxzoomend', function (event) {
-        const bounds = event.boxZoomBounds;
-        if (!state.ctrlDown) {
-            state.table.rows((idx, data, node) => {
-                return state.selectedIDs.includes(data.id);
-            }).deselect();
-            // Remove selected from another year that would now be deselected.
-            state.missingSelected = [];
-        }
-        const selected = [];
-        const deselected = [];
-        for (let id of Object.keys(state.stands)) {
-            if (bounds.contains(state.stands[id].marker.getLatLng())) {
-                if (state.selectedIDs.includes(id)) {
-                    deselected.push(id);
-                } else {
-                    selected.push(id);
-                }
-            }
-        }
-        console.log('selecting', selected);
-        console.log('deselecting', deselected);
-        selectMany(selected);
-        deselectMany(deselected);
-    });
+    map.on('boxzoomend', onMapSelectSquare);
 
     // Load first of each.
     createTable();
     changeYear(2019);
+    zoomOnAll();
+}
+
+function select(id) {
+    state.table.row((idx, data) => {
+        return data.id === id;
+    }).select().scrollTo();
+    updateMapView();
+}
+
+function selectMany(ids) {
+    state.table.rows((idx, data) => {
+        return ids.includes(data.id);
+    }).select();
+    updateMapView();
+}
+
+function deselect(id) {
+    state.table.row((idx, data) => {
+        return data.id === id;
+    }).deselect();
+    updateMapView();
+}
+
+function deselectMany(ids) {
+    state.table.rows((idx, data) => {
+        return ids.includes(data.id);
+    }).deselect();
+    updateMapView();
+}
+
+function onMapSelectSquare(event) {
+    console.log(event);
+    const bounds = event.boxZoomBounds;
+    if (!state.ctrlDown) {
+        deselectMany(state.selectedIDs);
+        // Remove selected from another year that would now be deselected.
+        state.missingSelected = [];
+    }
+    const selected = [];
+    const deselected = [];
+    for (let id of Object.keys(state.stands)) {
+        if (bounds.contains(state.stands[id].marker.getLatLng())) {
+            if (state.selectedIDs.includes(id)) {
+                deselected.push(id);
+            } else {
+                selected.push(id);
+            }
+        }
+    }
+    selectMany(selected);
+    deselectMany(deselected);
+    zoomOnSelected();
+}
+
+function onMarkerClick(id) {
+    return () => {
+        if (state.ctrlDown) {
+            if (state.selectedIDs.includes(id)) {
+                deselect(id);
+            } else {
+                select(id);
+            }
+        } else {
+            const selected = state.selectedIDs.includes(id);
+            const selectedMany = state.selectedIDs.length > 1;
+            deselectMany(state.selectedIDs);
+            state.missingSelected = []; // Remove selected from another year that would now be deselected.
+            if (selected && !selectedMany) {
+                deselect(id);
+            } else {
+                select(id);
+            }
+        }
+    };
+}
+
+function onTableSearch() {
+    if (!state.table.search()) {
+        state.filteredIDs = [];
+    } else {
+        state.filteredIDs = state.table.rows({search: 'applied'})
+            .data().pluck('id').toArray();
+    }
+}
+
+function onTableSelect(e, dt, type, indexes) {
+    if (type === 'row') {
+        state.table.rows(indexes).data().pluck('id').toArray()
+            .forEach(function (id) {
+                state.selectedIDs.push(id);
+            });
+        // Remove selected from another year that would now be deselected.
+        if (state.selectedIDs.length === 1) state.missingSelected = [];
+        updateMapView();
+    }
+}
+
+function onTableDeselect(e, dt, type, indexes) {
+    if (type === 'row') {
+        state.table.rows(indexes).data().pluck('id').toArray()
+            .forEach(id => { // Remove from array
+                state.selectedIDs.splice(state.selectedIDs.indexOf(id), 1);
+            });
+        updateMapView();
+    }
 }
 
 function updateMapView() {
     const bikeStands = state.stands;
     let filteredIDs = state.filteredIDs;
     let selectedIDs = state.selectedIDs;
-    let previousFilterLength = state.previousFilterLength;
-    let previousSelectLength = state.previousSelectLength;
 
-    const pointLatLngs = [];
     for (let key of Object.keys(bikeStands)) {
         const stand = bikeStands[key];
         const hasNoFilter = !filteredIDs || !filteredIDs.length;
         const isVisible = hasNoFilter || filteredIDs.includes(stand.id);
-
-        const hasNoSelection = !selectedIDs || !selectedIDs.length;
-        const isSelected = hasNoSelection || selectedIDs.includes(stand.id);
+        const isSelected = selectedIDs.includes(stand.id);
 
         if (isSelected) {
-            pointLatLngs.push(stand.marker.getLatLng());
-        }
-        if (!hasNoSelection && isSelected) {
             stand.marker.setStyle(style.selectedCircle)
-                .setRadius(stand.marker.options.radius)
-                .openPopup();
+                .setRadius(stand.marker.options.radius);
+            if (state.showPopups) {
+                stand.marker.openPopup();
+            }
         } else {
             stand.marker.closePopup();
             if (isVisible) {
@@ -212,13 +292,31 @@ function updateMapView() {
             stand.marker.closePopup();
         }
     }
-    if (previousSelectLength !== selectedIDs.length) {
-        var bounds = new L.LatLngBounds(pointLatLngs);
-        map.flyToBounds(bounds, {animate: true, easeLinearity: 0.1, duration: 1.5});
-    }
+}
 
-    state.previousFilterLength = filteredIDs.length;
-    state.previousSelectLength = selectedIDs.length;
+function zoomOnSelected() {
+    if (!state.selectedIDs.length) {
+        zoomOnAll();
+        return;
+    }
+    const pointLatLngs = [];
+    for (let id of state.selectedIDs) {
+        pointLatLngs.push(state.stands[id].marker.getLatLng());
+    }
+    zoomToBounds(new L.LatLngBounds(pointLatLngs));
+}
+
+function zoomOnAll() {
+    const pointLatLngs = [];
+    for (let id of Object.keys(state.stands)) {
+        if (state.filteredIDs.includes(id)) continue;
+        pointLatLngs.push(state.stands[id].marker.getLatLng());
+    }
+    zoomToBounds(new L.LatLngBounds(pointLatLngs));
+}
+
+function zoomToBounds(bounds) {
+    map.flyToBounds(bounds, {animate: true, easeLinearity: 0.1, duration: 1.5});
 }
 
 function createTable() {
@@ -234,60 +332,11 @@ function createTable() {
         data: [],
         order: [[0, "asc"]]
     });
+    table.on('search.dt', onTableSearch);
+    table.on('select', onTableSelect);
+    table.on('user-select', () => setTimeout(zoomOnSelected, 5));
+    table.on('deselect', onTableDeselect);
     state.table = table;
-    table.on('search.dt', function () {
-        if (!table.search()) {
-            state.filteredIDs = [];
-        } else {
-            state.filteredIDs = table.rows({search: 'applied'})
-                .data().pluck('id').toArray();
-        }
-        updateMapView();
-    });
-    table.on('select', function (e, dt, type, indexes) {
-        if (type === 'row') {
-            table.rows(indexes).data().pluck('id')
-                .toArray().forEach(function (id) {
-                state.selectedIDs.push(id);
-            });
-            // Remove selected from another year that would now be deselected.
-            if (state.selectedIDs.length === 1) state.missingSelected = [];
-            updateMapView();
-        }
-    });
-    table.on('deselect', function (e, dt, type, indexes) {
-        if (type === 'row') {
-            table.rows(indexes).data().pluck('id').toArray()
-                .forEach(id => { // Remove from array
-                    state.selectedIDs.splice(state.selectedIDs.indexOf(id), 1);
-                });
-            updateMapView();
-        }
-    });
-}
-
-function select(id) {
-    state.table.row((idx, data, node) => {
-        return data.id === id;
-    }).select().scrollTo();
-}
-
-function selectMany(ids) {
-    state.table.rows((idx, data, node) => {
-        return ids.includes(data.id);
-    }).select();
-}
-
-function deselect(id) {
-    state.table.row((idx, data, node) => {
-        return data.id === id;
-    }).deselect();
-}
-
-function deselectMany(ids) {
-    state.table.rows((idx, data, node) => {
-        return ids.includes(data.id);
-    }).deselect();
 }
 
 function changeYear(year) {
@@ -302,36 +351,18 @@ function changeYear(year) {
     for (let id of Object.keys(state.stands)) {
         const stand = state.stands[id];
 
-        const markerContent = '<div>' + stand.id + ' : ' + stand.name + '</div>';
+        const markerContent = stand.id + ' : ' + stand.name;
         stand.marker = L.circle([stand.y, stand.x], style.visibleCircle)
-            .bindPopup(markerContent, {autoClose: false, closeButton: false})
+            .addTo(map)
+            .bindPopup(markerContent, {autoClose: false, closeButton: false, closeOnEscapeKey: false})
             .addTo(map);
 
         // Links map click events to the selection state
         // Ctrl behavior is same on both table and map to reduce confusion
-        stand.marker.on('click', (e) => {
-            if (state.ctrlDown) {
-                if (state.selectedIDs.includes(id)) {
-                    deselect(id);
-                } else {
-                    select(id);
-                }
-            } else {
-                const selected = state.selectedIDs.includes(id);
-                const selectedMany = state.selectedIDs.length > 1;
-                state.table.rows((idx, data, node) => {
-                    return state.selectedIDs.includes(data.id);
-                }).deselect();
-                state.missingSelected = []; // Remove selected from another year that would now be deselected.
-                if (selected && !selectedMany) {
-                    deselect(id);
-                } else {
-                    select(id);
-                }
-            }
-        });
+        stand.marker.on('click', onMarkerClick(id));
     }
 
+    // Redraw table with stands of selected year
     const table = state.table;
     table.clear();
     table.rows.add(Object.keys(state.stands).map(function (id) {
@@ -342,7 +373,6 @@ function changeYear(year) {
     // Sort out selection if missing some selected items from another year
     state.missingSelected.forEach(id => state.selectedIDs.push(id));
     state.missingSelected = [];
-
     const toSelect = [];
     state.selectedIDs.forEach(id => {
         if (state.stands[id]) {
@@ -354,6 +384,7 @@ function changeYear(year) {
     state.selectedIDs = [];
     selectMany(toSelect);
 
+    // Reset Zoom
     state.previousSelectLength = -1;
     updateMapView();
 }

@@ -103,8 +103,35 @@
 
     request("data/gz/tellingit_2017-2019.csv.gz", loadStands);
 
-    // request("data/gz/data_2017.csv.gz", function (data, error) {
-    //     const availability2017 = loadCSV(data);
+    function loadDataCSV(bytes) {
+        const decompressedUint8Array = new Zlib.Gunzip(bytes).decompress();
+        let decoder = new TextDecoder("utf-8");
+        const asString = decoder.decode(decompressedUint8Array);
+        const asObject = {};
+
+        // Split by newline
+        for (let row of asString.split(decoder.decode(Uint8Array.from([10])))) {
+            if (!row) continue;
+            const split = row.split(";");
+            asObject[split[0]] = JSON.parse(split[1]);
+        }
+        return asObject;
+    }
+
+    let a2017 = {loaded: false};
+    request("data/preprocessed/data_2017.csv.gz", function (data, error) {
+        a2017 = loadDataCSV(data);
+        a2017.loaded = true;
+    });
+    let a2018 = {loaded: false};
+    request("data/preprocessed/data_2018.csv.gz", function (data, error) {
+        a2018 = loadDataCSV(data);
+        a2018.loaded = true;
+    });
+    let a2019 = {loaded: false};
+    // request("data/preprocessed/data_2019.csv.gz", function (data, error) {
+    //     a2019 = loadDataCSV(data);
+    //     a2019.loaded = true;
     // });
 </script>
 </body>

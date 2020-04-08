@@ -117,22 +117,6 @@
         }
         return asObject;
     }
-
-    let a2017 = {loaded: false};
-    request("data/preprocessed/data_2017.csv.gz", function (data, error) {
-        a2017 = loadDataCSV(data);
-        a2017.loaded = true;
-    });
-    let a2018 = {loaded: false};
-    request("data/preprocessed/data_2018.csv.gz", function (data, error) {
-        a2018 = loadDataCSV(data);
-        a2018.loaded = true;
-    });
-    let a2019 = {loaded: false};
-    // request("data/preprocessed/data_2019.csv.gz", function (data, error) {
-    //     a2019 = loadDataCSV(data);
-    //     a2019.loaded = true;
-    // });
 </script>
 </body>
 </html>

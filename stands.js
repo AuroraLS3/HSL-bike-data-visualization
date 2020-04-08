@@ -7,7 +7,9 @@ const state = {
     previousFilterLength: 0,
     previousSelectLength: -1,
     ctrlDown: false,
-    showPopups: true
+    showPopups: true,
+    year: -1,
+    timeData: {},
 };
 const style = {};
 
@@ -185,7 +187,6 @@ function deselectMany(ids) {
 }
 
 function onMapSelectSquare(event) {
-    console.log(event);
     const bounds = event.boxZoomBounds;
     if (!state.ctrlDown) {
         deselectMany(state.selectedIDs);
@@ -239,12 +240,55 @@ function onTableSearch() {
     }
 }
 
+function loadTimeData(id, callbackOnLoad) {
+    caches.open('bike-data').then((cache) => {
+        cache.match(new Request(id + '-' + state.year)).then((response => {
+            if (response) {
+                response.json().then(json => {
+                    state.timeData[id] = json;
+                    callbackOnLoad();
+                });
+            } else {
+                requestJSON('data/json/data-' + id + '-' + state.year + '.json', function (json, error) {
+                    if (error) {
+                        console.error(error);
+                        return;
+                    }
+                    state.timeData[id] = json.series;
+                    cache.put(id + '-' + state.year, new Response(JSON.stringify(json.series)));
+                    callbackOnLoad();
+                })
+            }
+        }));
+    });
+}
+
+function loadTimeDataMany(ids, callbackOnLoad) {
+    const need = ids.length;
+    let got = 0;
+    for (let id of ids) {
+        loadTimeData(id, () => got++);
+    }
+
+    function check() {
+        if (got === need) {
+            callbackOnLoad();
+        } else {
+            setTimeout(check, need * 25)
+        }
+    }
+
+    check();
+    if (got !== need) setTimeout(check, need * 25);
+}
+
 function onTableSelect(e, dt, type, indexes) {
     if (type === 'row') {
-        state.table.rows(indexes).data().pluck('id').toArray()
-            .forEach(function (id) {
-                state.selectedIDs.push(id);
-            });
+        let selected = state.table.rows(indexes).data().pluck('id').toArray();
+        selected.forEach(function (id) {
+            state.selectedIDs.push(id);
+        });
+        loadTimeDataMany(selected, () => console.log('loaded ' + selected));
         // Remove selected from another year that would now be deselected.
         if (state.selectedIDs.length === 1) state.missingSelected = [];
         updateMapView();
@@ -256,6 +300,7 @@ function onTableDeselect(e, dt, type, indexes) {
         state.table.rows(indexes).data().pluck('id').toArray()
             .forEach(id => { // Remove from array
                 state.selectedIDs.splice(state.selectedIDs.indexOf(id), 1);
+                delete state.timeData[id];
             });
         updateMapView();
     }
@@ -340,6 +385,7 @@ function createTable() {
 }
 
 function changeYear(year) {
+    state.year = year;
     $('.season-btn').removeClass('current');
     $('#btn' + year).addClass('current');
     for (let id of Object.keys(state.stands)) {

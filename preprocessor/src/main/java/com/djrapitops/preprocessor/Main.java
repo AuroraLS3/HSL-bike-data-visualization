@@ -14,13 +14,14 @@ public class Main {
         Path dataDir = new File("").toPath().toAbsolutePath().getParent()
                 .resolve("data");
 
-        Files.createDirectories(dataDir.resolve("preprocessed"));
+        Path writeDir = dataDir.resolve("json");
+        Files.createDirectories(writeDir);
         for (String fileName : Arrays.asList("data_2017.csv", "data_2018.csv", "data_2019.csv")) {
-            parse(dataDir.resolve("preprocessed").resolve(fileName), dataDir.resolve("csv").resolve(fileName));
+            parse(writeDir, dataDir.resolve("csv").resolve(fileName), fileName.substring(5, 9));
         }
     }
 
-    private static void parse(Path writeTo, Path file) throws IOException {
+    private static void parse(Path dir, Path file, String year) throws IOException {
         Map<String, StringBuilder> parser = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         System.out.println("Parsing lines of " + file.toString());
         try (Stream<String> lines = Files.lines(file)) {
@@ -31,31 +32,28 @@ public class Main {
                     return;
                 }
                 DataPoint dataPoint = new DataPoint(id, row[7].trim(), row[1].trim(), row[2].trim());
-                parser.computeIfAbsent(dataPoint.id, key -> new StringBuilder(dataPoint.id + ";["))
-                        .append(",").append(dataPoint.toArrayString());
+                parser.computeIfAbsent(dataPoint.id, key -> new StringBuilder("{\"id\":\"" + dataPoint.id + "\",\"series\":["))
+                        .append(",").append(dataPoint.toArrayString()); // adds an extra , at the start of the array
             });
         }
         System.out.println("Parsing complete, parsed data for " + parser.size() + " stations");
-
-        System.out.println("Generating lines and writing to file..");
-        Files.deleteIfExists(writeTo);
-        Files.createFile(writeTo);
-
-        try (PrintStream fileStream = new PrintStream(writeTo.toFile())) {
-            for (String key : new ArrayList<>(parser.keySet())) {
+        for (String key : new ArrayList<>(parser.keySet())) {
+            Path writeTo = dir.resolve("data-" + key + "-" + year + ".json");
+            Files.deleteIfExists(writeTo);
+            Files.createFile(writeTo);
+            System.out.println("Writing " + writeTo.toFile().getName() + "..");
+            try (PrintStream fileStream = new PrintStream(writeTo.toFile())) {
                 StringBuilder line = parser.get(key);
                 parser.remove(key);
-                int splitter = line.indexOf(";") + 2;
+
                 try {
-                    StringBuilder ready = line.replace(splitter, splitter + 1, "").append("]");
-                    Thread.sleep(0);
+                    // Remove preceding , from line 36
+                    StringBuilder ready = line.deleteCharAt(line.indexOf("[") + 1).append("]}");
                     fileStream.println(ready.toString());
                     fileStream.flush();
                 } catch (OutOfMemoryError e) {
                     System.out.println("Failure copying length: " + line.length());
                     throw e;
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
                 }
             }
         }

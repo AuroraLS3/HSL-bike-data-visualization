@@ -9,8 +9,8 @@ https://rsl1122.github.io/HSL-bike-data-visualization/
 
 Sources & Licenses:
 
-- Data from [Markus Kainu](http://data.markuskainu.fi/opendata/kaupunkipyorat/)  | [`Attribution 4.0 International (CC BY 4.0)`](https://creativecommons.org/licenses/by/4.0/deed.en)
-- Map background from [Digitransit Map API](https://digitransit.fi/en/developers/apis/3-map-api/background-map/) | [`Attribution 4.0 International (CC BY 4.0)`](https://digitransit.fi/en/developers/apis/6-terms-of-use/)
+- Data from [Markus Kainu](http://data.markuskainu.fi/opendata/kaupunkipyorat/)  | [`CC BY 4.0`](https://creativecommons.org/licenses/by/4.0/deed.en)
+- Map background from [Digitransit Map API](https://digitransit.fi/en/developers/apis/3-map-api/background-map/) | [`CC BY 4.0`](https://digitransit.fi/en/developers/apis/6-terms-of-use/)
 - Libraries
   - [CSV-ES](https://github.com/vanillaes/csv-es) (Modified `index.cjs`) | [`MIT license`](https://raw.githubusercontent.com/vanillaes/csv-es/master/LICENSE)
   - [zlib.js gunzip](https://github.com/imaya/zlib.js) | [`MIT license`](https://github.com/imaya/zlib.js/blob/develop/LICENSE)

@@ -35,3 +35,13 @@ h1,h2,h3 {
 .dataTables_scrollBody {
     min-height: 80vh;
 }
+
+.hidden {
+    display: none;
+}
+
+/*
+    Hides labels of non-highlighted charts
+ */
+.dygraph-legend > span { display: none; }
+.dygraph-legend > span.highlight { display: inline; }

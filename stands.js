@@ -4,12 +4,11 @@ const state = {
     filteredIDs: [],
     selectedIDs: [],
     missingSelected: [],
-    previousFilterLength: 0,
-    previousSelectLength: -1,
     ctrlDown: false,
     showPopups: true,
     year: -1,
     timeData: {},
+    standsOnChart: 0
 };
 const style = {};
 
@@ -288,7 +287,7 @@ function onTableSelect(e, dt, type, indexes) {
         selected.forEach(function (id) {
             state.selectedIDs.push(id);
         });
-        loadTimeDataMany(selected, () => console.log('loaded ' + selected));
+        loadTimeDataMany(selected, updateChartView);
         // Remove selected from another year that would now be deselected.
         if (state.selectedIDs.length === 1) state.missingSelected = [];
         updateMapView();
@@ -303,6 +302,60 @@ function onTableDeselect(e, dt, type, indexes) {
                 delete state.timeData[id];
             });
         updateMapView();
+        updateChartView();
+    }
+}
+
+function updateChartView() {
+    const selectedIDs = state.selectedIDs;
+    const count = selectedIDs.length;
+    state.standsOnChart = count;
+    if (count === 0) {
+        $('#select-stand-text').removeClass('hidden');
+        $('#graph').addClass('hidden');
+    } else {
+        $('#select-stand-text').addClass('hidden');
+        $('#graph').removeClass('hidden');
+        const timeData = state.timeData;
+        const byDate = {};
+        Object.keys(timeData).forEach(id => {
+            timeData[id].forEach(entry => {
+                let date = entry[0];
+                if (!byDate[date]) byDate[date] = {};
+                byDate[date][id] = (entry[2] >= entry[1] ? entry[1] : null);
+            })
+        });
+        const data = Object.keys(byDate).map(key => [new Date(key), ...Object.values(byDate[key])]);
+
+        if (state.graph) {
+            state.graph.updateOptions({
+                'file': data,
+                labels: ['time', ...Object.keys(timeData).map(id => state.stands[id].name)]
+            })
+        } else {
+            state.graph = new Dygraph(
+                document.getElementById("graph"),
+                data,
+                {
+                    labels: ['time', ...Object.keys(timeData).map(id => state.stands[id].name)],
+                    customBars: false,
+                    showRoller: true,
+                    rollPeriod: 300,
+                    ylabel: 'Available Bikes',
+                    legend: (count < 7 ? 'always' : 'never'),
+                    showRangeSelector: true,
+                    highlightCircleSize: 1,
+                    strokeWidth: 0.5,
+                    strokeBorderWidth: 0.5,
+
+                    highlightSeriesOpts: {
+                        strokeWidth: 1,
+                        strokeBorderWidth: 0.5,
+                        highlightCircleSize: 2
+                    }
+                }
+            );
+        }
     }
 }
 
@@ -429,8 +482,9 @@ function changeYear(year) {
     });
     state.selectedIDs = [];
     selectMany(toSelect);
+    loadTimeDataMany(toSelect, updateChartView);
 
-    // Reset Zoom
-    state.previousSelectLength = -1;
     updateMapView();
+    // Reset Zoom
+    zoomOnSelected();
 }

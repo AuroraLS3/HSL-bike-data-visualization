@@ -8,27 +8,50 @@ const state = {
     showPopups: true,
     year: -1,
     timeData: {},
-    standsOnChart: 0
+    standsOnChart: 0,
+    hueForGeneration: Math.random()
 };
 const style = {};
 
+const colorMaps = {
+    cold: {
+        old: '#0099cc',
+        single: '#5EBCD2',
+        more: ['#DCECC9', '#B3DDCC', '#8ACDCE', '#62BED2', '#46AACE', '#3D91BE', '#3577AE', '#2D5E9E', '#24448E', '#1C2B7F', '#162065', '#11174B']
+    },
+    hot: {
+        old: '#ffac63',
+        single: '#F4B656',
+        more: ['#FDED86', '#FDE86E', '#F9D063', '#F5B857', '#F0A04B', '#EB8A40', '#E77235', '#E35B2C', '#C74E29', '#9D4429', '#753C2C', '#4C3430']
+    },
+    grayscale: {
+        single: '#929292'
+    },
+    randomized: []
+};
+
+for (let i = 0; i < 100; i++) {
+    const rgb = hsvToRgb(...randomHSVColor());
+    colorMaps.randomized.push(`rgb(${rgb[0]}, ${rgb[1]},${rgb[2]})`);
+}
+
 style.visibleCircle = {
-    color: '#0099cc',
-    fillColor: '#0099cc',
-    fillOpacity: 0.5,
+    color: colorMaps.cold.single,
+    fillColor: colorMaps.cold.single,
+    fillOpacity: 0.75,
     opacity: 1.0,
     radius: 40,
     weight: 1
 };
 style.selectedCircle = {
     ...style.visibleCircle,
-    color: '#ffac63',
-    fillColor: '#ffac63',
+    color: colorMaps.hot.single,
+    fillColor: colorMaps.hot.single,
 };
 style.hiddenCircle = {
     ...style.visibleCircle,
-    color: '#929292',
-    fillColor: '#929292',
+    color: colorMaps.grayscale.single,
+    fillColor: colorMaps.grayscale.single,
     opacity: 0.7,
     radius: 20
 };
@@ -45,6 +68,71 @@ $('#popupSwitch').click(() => {
     state.showPopups = $('#popupSwitch').is(":checked");
     updateMapView();
 });
+
+function hsvToRgb(h, s, v) {
+    var r, g, b;
+
+    var i = Math.floor(h * 6);
+    var f = h * 6 - i;
+    var p = v * (1 - s);
+    var q = v * (1 - f * s);
+    var t = v * (1 - (1 - f) * s);
+
+    switch (i % 6) {
+        case 0:
+            r = v, g = t, b = p;
+            break;
+        case 1:
+            r = q, g = v, b = p;
+            break;
+        case 2:
+            r = p, g = v, b = t;
+            break;
+        case 3:
+            r = p, g = q, b = v;
+            break;
+        case 4:
+            r = t, g = p, b = v;
+            break;
+        case 5:
+            r = v, g = p, b = q;
+            break;
+    }
+
+    return [r * 255, g * 255, b * 255];
+}
+
+function randomHSVColor() {
+    const goldenRatioConjugate = 0.618033988749895;
+    state.hueForGeneration += goldenRatioConjugate;
+    const hue = (state.hueForGeneration) % 1;
+    const saturation = 0.7;
+    const value = 0.7;
+    return [hue, saturation, value]
+}
+
+function getColors(howMany) {
+    switch (howMany) {
+        case 1:
+            return [colorMaps.cold.single];
+        case 2:
+            return [colorMaps.cold.more[2], colorMaps.cold.more[6]];
+        case 3:
+            return [colorMaps.cold.more[2], colorMaps.cold.more[6], colorMaps.cold.more[9]];
+        default:
+            const colors = [];
+            if (howMany >= 12) {
+                for (let i = 0; i < Math.min(11, howMany); i++) {
+                    colors.push(colorMaps.cold.more[i])
+                }
+                howMany -= 12;
+            }
+            for (let i = 0; i < howMany; i++) {
+                colors.push(colorMaps.randomized[i % 100]);
+            }
+            return colors;
+    }
+}
 
 function loadStandsOfYear(year) {
     state.stands = {};
@@ -320,9 +408,14 @@ function updateChartView() {
         const byDate = {};
         Object.keys(timeData).forEach(id => {
             timeData[id].forEach(entry => {
-                let date = entry[0];
+                const date = entry[0];
+                const value = entry[1];
                 if (!byDate[date]) byDate[date] = {};
-                byDate[date][id] = (entry[2] >= entry[1] ? entry[1] : null);
+                // Attempts to keep data intact
+                // - Only keeps one entry per id per date
+                // - Uses smallest 'available' value
+                const existing = byDate[date][id] ? byDate[date][id] : null;
+                byDate[date][id] = existing ? Math.min(value, existing) : value;
             })
         });
         const data = Object.keys(byDate).map(key => [new Date(key), ...Object.values(byDate[key])]);
@@ -330,7 +423,8 @@ function updateChartView() {
         if (state.graph) {
             state.graph.updateOptions({
                 'file': data,
-                labels: ['time', ...Object.keys(timeData).map(id => state.stands[id].name)]
+                labels: ['time', ...Object.keys(timeData).map(id => state.stands[id].name)],
+                colors: getColors(count)
             })
         } else {
             state.graph = new Dygraph(
@@ -338,19 +432,20 @@ function updateChartView() {
                 data,
                 {
                     labels: ['time', ...Object.keys(timeData).map(id => state.stands[id].name)],
+                    colors: getColors(count),
                     customBars: false,
                     showRoller: true,
                     rollPeriod: 300,
                     ylabel: 'Available Bikes',
-                    legend: (count < 7 ? 'always' : 'never'),
+                    legend: 'always',
                     showRangeSelector: true,
                     highlightCircleSize: 1,
-                    strokeWidth: 0.5,
-                    strokeBorderWidth: 0.5,
+                    strokeWidth: 1,
+                    strokeBorderWidth: 1,
 
                     highlightSeriesOpts: {
-                        strokeWidth: 1,
-                        strokeBorderWidth: 0.5,
+                        strokeWidth: 1.5,
+                        strokeBorderWidth: 1.5,
                         highlightCircleSize: 2
                     }
                 }
@@ -454,6 +549,7 @@ function changeYear(year) {
         stand.marker = L.circle([stand.y, stand.x], style.visibleCircle)
             .addTo(map)
             .bindPopup(markerContent, {autoClose: false, closeButton: false, closeOnEscapeKey: false})
+            .bindTooltip(stand.name)
             .addTo(map);
 
         // Links map click events to the selection state

@@ -40,8 +40,20 @@ h1,h2,h3 {
     display: none;
 }
 
-/*
-    Hides labels of non-highlighted charts
- */
-.dygraph-legend > span { display: none; }
-.dygraph-legend > span.highlight { display: inline; }
+/* Hides labels of non-highlighted charts */
+.dygraph-legend > span {
+    display: none;
+}
+
+.dygraph-legend > span.highlight {
+    display: inline;
+}
+
+/* Aligns Search box on the left */
+#stands_filter {
+    text-align: left;
+}
+
+#stands_filter input {
+    width: 100%;
+}

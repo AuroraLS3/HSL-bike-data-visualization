@@ -52,7 +52,7 @@ style.hiddenCircle = {
     ...style.visibleCircle,
     color: colorMaps.grayscale.single,
     fillColor: colorMaps.grayscale.single,
-    opacity: 0.7,
+    opacity: 0.5,
     radius: 20
 };
 
@@ -325,6 +325,7 @@ function onTableSearch() {
         state.filteredIDs = state.table.rows({search: 'applied'})
             .data().pluck('id').toArray();
     }
+    updateMapView();
 }
 
 function loadTimeData(id, callbackOnLoad) {
@@ -514,6 +515,7 @@ function zoomToBounds(bounds) {
 
 function createTable() {
     const table = $('#stands').DataTable({
+        dom: '<"float-left"f>rtip',
         responsive: true,
         select: true,
         scroller: true,
@@ -523,7 +525,16 @@ function createTable() {
         paging: true,
         columns: [{title: '<i class="fa fa-bicycle"></i> Bike Stands', data: 'name'}],
         data: [],
-        order: [[0, "asc"]]
+        order: [[0, "asc"]],
+        language: {
+            info: 'Showing _TOTAL_ of _MAX_ stands',
+            infoFiltered: '',
+            select: {
+                rows: {
+                    _: "%d selected"
+                }
+            }
+        }
     });
     table.on('search.dt', onTableSearch);
     table.on('select', onTableSelect);

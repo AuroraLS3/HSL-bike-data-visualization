@@ -337,7 +337,7 @@ function loadTimeData(id, callbackOnLoad) {
                     callbackOnLoad();
                 });
             } else {
-                requestJSON('data/json/data-' + id + '-' + state.year + '.json', function (json, error) {
+                requestJSON('data/json-grouped/data-' + id + '-' + state.year + '.json', function (json, error) {
                     if (error) {
                         console.error(error);
                         return;
@@ -436,8 +436,8 @@ function updateChartView() {
                     colors: getColors(count),
                     customBars: false,
                     showRoller: true,
-                    rollPeriod: 300,
-                    ylabel: 'Available Bikes',
+                    rollPeriod: 3,
+                    ylabel: 'Average Available Bikes by Hour',
                     legend: 'always',
                     showRangeSelector: true,
                     highlightCircleSize: 1,

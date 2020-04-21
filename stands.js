@@ -236,6 +236,12 @@ function loadStands(data, error) {
             byId[id].push(newStand);
         }
     }
+    const aliases = findAliasIds();
+    for (let id of Object.keys(aliases)) {
+        for (let stand of byId[id]) {
+            stand.aliases = aliases[id];
+        }
+    }
 
     map.on('boxzoomend', onMapSelectSquare);
 
@@ -243,6 +249,25 @@ function loadStands(data, error) {
     createTable();
     changeYear(2019);
     zoomOnAll();
+}
+
+function findAliasIds() {
+    const standsNearEachOther = {};
+    // Go over the array to find all changed ids.
+    for (let id of Object.keys(state.standsById)) {
+        for (let id2 of Object.keys(state.standsById)) {
+            if (id === id2) continue;
+            for (let stand of state.standsById[id]) {
+                for (let stand2 of state.standsById[id2]) {
+                    if (Math.abs(stand.x - stand2.x) < 0.000000001 && Math.abs(stand.y - stand2.y) < 0.000000001) {
+                        standsNearEachOther[id] = standsNearEachOther[id] ? standsNearEachOther[id] : {};
+                        standsNearEachOther[id][stand2.year] = id2;
+                    }
+                }
+            }
+        }
+    }
+    return standsNearEachOther;
 }
 
 function select(id) {
@@ -407,7 +432,8 @@ function updateChartView() {
         $('#graph').removeClass('hidden');
         const timeData = state.timeData;
         const byDate = {};
-        Object.keys(timeData).forEach(id => {
+        let graphedIDs = Object.keys(timeData);
+        graphedIDs.forEach(id => {
             timeData[id].forEach(entry => {
                 const date = entry[0];
                 const value = entry[1];
@@ -417,14 +443,18 @@ function updateChartView() {
                 // - Uses smallest 'available' value
                 const existing = byDate[date][id] ? byDate[date][id] : null;
                 byDate[date][id] = existing ? Math.min(value, existing) : value;
+                for (let graphedID of graphedIDs) {
+                    if (!byDate[date][graphedID]) byDate[date][graphedID] = null;
+                }
             })
         });
         const data = Object.keys(byDate).map(key => [new Date(key), ...Object.values(byDate[key])]);
+        state.temp = data;
 
         if (state.graph) {
             state.graph.updateOptions({
                 'file': data,
-                labels: ['time', ...Object.keys(timeData).map(id => state.stands[id].name)],
+                labels: ['time', ...graphedIDs.map(id => state.stands[id].name)],
                 colors: getColors(count)
             })
         } else {
@@ -432,14 +462,15 @@ function updateChartView() {
                 document.getElementById("graph"),
                 data,
                 {
-                    labels: ['time', ...Object.keys(timeData).map(id => state.stands[id].name)],
+                    labels: ['time', ...graphedIDs.map(id => state.stands[id].name)],
                     colors: getColors(count),
                     customBars: false,
-                    showRoller: true,
                     rollPeriod: 3,
                     ylabel: 'Average Available Bikes by Hour',
                     legend: 'always',
                     showRangeSelector: true,
+                    rangeSelectorPlotStrokeColor: colorMaps.cold.single,
+                    rangeSelectorPlotFillColor: "",
                     highlightCircleSize: 1,
                     strokeWidth: 1,
                     strokeBorderWidth: 1,
@@ -581,17 +612,31 @@ function changeYear(year) {
     state.missingSelected = [];
     const toSelect = [];
     state.selectedIDs.forEach(id => {
-        if (state.stands[id]) {
-            toSelect.push(id);
+        let useID = id;
+        const alias = findAlias(id, year);
+        if (alias) useID = alias;
+        if (state.stands[useID]) {
+            toSelect.push(useID);
         } else {
             state.missingSelected.push(id);
         }
     });
     state.selectedIDs = [];
     selectMany(toSelect);
-    loadTimeDataMany(toSelect, updateChartView);
+    state.timeData = {};
+    loadTimeDataMany(toSelect, () => {
+        updateChartView();
+        if (state.graph) state.graph.updateOptions({dateWindow: null});
+    });
 
     updateMapView();
     // Reset Zoom
     zoomOnSelected();
+}
+
+function findAlias(id, year) {
+    for (let stand of state.standsById[id]) {
+        if (stand.aliases && stand.aliases[year]) return stand.aliases[year];
+    }
+    return null;
 }

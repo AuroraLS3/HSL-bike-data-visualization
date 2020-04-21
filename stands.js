@@ -64,11 +64,6 @@ document.addEventListener("keyup", event => {
     if (event.key === 'Control') state.ctrlDown = false;
 });
 
-$('#popupSwitch').click(() => {
-    state.showPopups = $('#popupSwitch').is(":checked");
-    updateMapView();
-});
-
 function hsvToRgb(h, s, v) {
     var r, g, b;
 

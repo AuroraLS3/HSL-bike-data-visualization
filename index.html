@@ -22,10 +22,6 @@
                     <button class="mt-2 col-12 btn btn-outline-secondary btn-lg season-btn" id="btn2017"
                             onclick="changeYear(2017)">2017
                     </button>
-                    <div class="mt-2 col-12 custom-control custom-switch">
-                        <input checked class="custom-control-input" id="popupSwitch" type="checkbox">
-                        <label class="custom-control-label" for="popupSwitch">Show labels</label>
-                    </div>
                 </div>
                 <div class="col-10 pl-0">
                     <div id="select-stand-text" class="text-center text-black-50">Select a bike stand</div>
@@ -104,22 +100,29 @@
         id: 'hsl-map'
     }).addTo(map);
 
-    request("data/gz/tellingit_2017-2019.csv.gz", loadStands);
+    L.Control.LabelSwitch = L.Control.extend({
+        onAdd: function (map) {
+            const controlDiv = L.DomUtil.create('div', 'mt-2 custom-control custom-switch');
+            controlDiv.innerHTML = '<input checked class="custom-control-input" id="popupSwitch" type="checkbox">' +
+                '<label class="custom-control-label mt-1" for="popupSwitch">Labels</label>';
 
-    function loadDataCSV(bytes) {
-        const decompressedUint8Array = new Zlib.Gunzip(bytes).decompress();
-        let decoder = new TextDecoder("utf-8");
-        const asString = decoder.decode(decompressedUint8Array);
-        const asObject = {};
-
-        // Split by newline
-        for (let row of asString.split(decoder.decode(Uint8Array.from([10])))) {
-            if (!row) continue;
-            const split = row.split(";");
-            asObject[split[0]] = JSON.parse(split[1]);
+            controlDiv.addEventListener('click', event => {
+                state.showPopups = $('#popupSwitch').is(":checked");
+                updateMapView();
+            });
+            return controlDiv;
+        },
+        onRemove: function (map) {
         }
-        return asObject;
-    }
+    });
+
+    L.control.labelSwitch = function (opts) {
+        return new L.Control.LabelSwitch(opts);
+    };
+
+    L.control.labelSwitch({position: 'bottomleft'}).addTo(map);
+
+    request("data/gz/tellingit_2017-2019.csv.gz", loadStands);
 </script>
 </body>
 </html>

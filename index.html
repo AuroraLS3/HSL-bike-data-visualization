@@ -37,7 +37,8 @@
                         </div>
                     </div>
                     <div class="text-center text-black-50 hidden" id="select-stand-text">Select a bike stand</div>
-                    <div class="text-center text-black-50 hidden" id="too-many-text">Up to 50 stands can be graphed.
+                    <div class="text-center text-black-50 hidden" id="too-many-text">Up to 50 stands can be shown on
+                        line graph.
                         Select fewer stands.
                     </div>
                     <div id="graph" style="height: 27.5vh; width: 100%;"></div>
@@ -54,6 +55,79 @@
                 <tbody>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <button class="btn color-primary" data-target="#exampleModal" data-toggle="modal"
+            style="position: fixed; bottom: 1rem; left: 1rem;" type="button">
+        <i class="far fa-2x fa-question-circle"></i>
+    </button>
+</div>
+
+<!-- Modal -->
+<div aria-hidden="true" aria-labelledby="exampleModalLongTitle" class="modal fade" id="exampleModal" role="dialog"
+     tabindex="-1">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">How to use the visualization</h5>
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        Simple selection: Click on a bike stand on the map or on the list.
+                    </div>
+                    <div class="col-md-6">
+                        <img alt="Example of ctrl selection" loading="lazy" src="img/select-simple.gif">
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p>You can modify selection by holding down <code>Ctrl</code> key while clicking on the map or
+                            on the list.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <img alt="Example of ctrl selection" loading="lazy" src="img/select-ctrl.gif">
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        You can select multiple on the map by holding down <code>Shift</code> key and dragging.
+                    </div>
+                    <div class="col-md-6">
+                        <img alt="Example of shift map selection" loading="lazy" src="img/select-map-shift.gif">
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <code>Ctrl</code>+<code>Shift</code> drag toggles selection of stands within the square.
+                        This can be used to add to selection or remove from selection.
+                    </div>
+                    <div class="col-md-6">
+                        <img alt="Example of shift map selection" loading="lazy" src="img/select-shift-ctrl-map.gif">
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p>Selected bike stands are drawn on line chart.</p>
+                        <p>Series can be zoomed and panned with the controls below the chart. Hover over series to see
+                            available bikes.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <img alt="Example of shift map selection" loading="lazy" src="img/view-chart.gif">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-dismiss="modal" type="button">Got it!</button>
+            </div>
         </div>
     </div>
 </div>

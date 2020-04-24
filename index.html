@@ -24,7 +24,19 @@
                     </button>
                 </div>
                 <div class="col-10 pl-0">
-                    <div id="select-stand-text" class="text-center text-black-50">Select a bike stand</div>
+                    <div class="text-center" id="loader-background">
+                        <div class="loader" id="loader-spinner">
+                            <div class="ball-pulse">
+                                <div></div>
+                                <div></div>
+                                <div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center text-black-50 hidden" id="select-stand-text">Select a bike stand</div>
+                    <div class="text-center text-black-50 hidden" id="too-many-text">Up to 50 stands can be graphed.
+                        Select fewer stands.
+                    </div>
                     <div id="graph" style="height: 27.5vh; width: 100%;"></div>
                 </div>
             </div>
@@ -81,6 +93,7 @@
 <script src="xmlhttprequest.js" charset="UTF-8"></script>
 <script src="vendor/es-csv/es-csv.js"></script>
 <script src="vendor/gunzip/gunzip.min.js"></script>
+<link href="vendor/loaders/loaders.css" rel="stylesheet">
 
 <!-- Page level scripts -->
 <script src="stands.js" charset="UTF-8"></script>
@@ -100,6 +113,7 @@
         id: 'hsl-map'
     }).addTo(map);
 
+    // Switch to control labels on the map
     L.Control.LabelSwitch = L.Control.extend({
         onAdd: function (map) {
             const controlDiv = L.DomUtil.create('div', 'mt-2 custom-control custom-switch');
@@ -115,11 +129,9 @@
         onRemove: function (map) {
         }
     });
-
     L.control.labelSwitch = function (opts) {
         return new L.Control.LabelSwitch(opts);
     };
-
     L.control.labelSwitch({position: 'bottomleft'}).addTo(map);
 
     request("data/gz/tellingit_2017-2019.csv.gz", loadStands);

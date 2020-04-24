@@ -57,3 +57,16 @@ h1,h2,h3 {
 #stands_filter input {
     width: 100%;
 }
+
+#loader-background {
+    z-index: 5;
+    background-color: rgba(0, 0, 0, 0.14);
+    position: absolute;
+    top: 0;
+    height: 27.5vh;
+    width: calc(100% - 1rem);
+}
+
+#loader-spinner {
+    margin-top: 5vh;
+}

@@ -19,6 +19,7 @@ Sources & Licenses:
   - [Bootstrap 4](https://v4-alpha.getbootstrap.com/) | [`MIT license`](https://v4-alpha.getbootstrap.com/about/license/)
   - [jQuery](https://jquery.com/) | [`MIT license`](https://jquery.org/license/)
   - [jQuery Datatables](https://datatables.net/) | [`MIT license`](https://datatables.net/license/mit)
+  - [loaders.css](https://github.com/ConnorAtherton/loaders.css) | [`MIT license`](https://github.com/ConnorAtherton/loaders.css/blob/master/README.md)
   - [Gradle](https://gradle.org) | [`Apache License 2.0`](https://github.com/gradle/gradle/blob/master/LICENSE)
 ----
 

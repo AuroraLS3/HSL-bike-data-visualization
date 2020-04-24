@@ -116,12 +116,6 @@ function getColors(howMany) {
             return [colorMaps.cold.more[2], colorMaps.cold.more[6], colorMaps.cold.more[9]];
         default:
             const colors = [];
-            if (howMany >= 12) {
-                for (let i = 0; i < Math.min(11, howMany); i++) {
-                    colors.push(colorMaps.cold.more[i])
-                }
-                howMany -= 12;
-            }
             for (let i = 0; i < howMany; i++) {
                 colors.push(colorMaps.randomized[i % 100]);
             }
@@ -179,8 +173,6 @@ function loadCSV(bytes) {
         asObjects.push(object);
     }
 
-    console.log("Object model: ", model, " - Loaded: ", asObjects.length + " rows");
-
     return asObjects;
 }
 
@@ -202,6 +194,12 @@ function loadStands(data, error) {
         '0516': {name: 'Vuosaari (M) / it\u00e4'},
         '0507': {name: 'Vuosaari (M) / l\u00e4nsi'}
     };
+    // Stands with no bikes available the whole year even though they show up in the data, checked manually.
+    const invalidForYears = {
+        2017: [],
+        2018: ['097', '102'],
+        2019: []
+    };
     const byId = state.standsById;
     for (let object of asObjects) {
         let id = object.id;
@@ -220,6 +218,10 @@ function loadStands(data, error) {
             // yday: parseInt(object.yday),
             year: parseInt(object.year)
         };
+
+        if (invalidForYears[newStand.year].includes(id)) {
+            continue;
+        }
 
         if (correctionEntries[id]) {
             newStand = {...newStand, ...correctionEntries[id]}
@@ -240,7 +242,6 @@ function loadStands(data, error) {
 
     map.on('boxzoomend', onMapSelectSquare);
 
-    // Load first of each.
     createTable();
     changeYear(2019);
     zoomOnAll();
@@ -372,6 +373,8 @@ function loadTimeData(id, callbackOnLoad) {
 }
 
 function loadTimeDataMany(ids, callbackOnLoad) {
+    $('#select-stand-text').addClass('hidden');
+    $('#too-many-text').addClass('hidden');
     const need = ids.length;
     let got = 0;
     for (let id of ids) {
@@ -392,6 +395,7 @@ function loadTimeDataMany(ids, callbackOnLoad) {
 
 function onTableSelect(e, dt, type, indexes) {
     if (type === 'row') {
+        $('#loader-background').removeClass('hidden');
         let selected = state.table.rows(indexes).data().pluck('id').toArray();
         selected.forEach(function (id) {
             state.selectedIDs.push(id);
@@ -405,6 +409,7 @@ function onTableSelect(e, dt, type, indexes) {
 
 function onTableDeselect(e, dt, type, indexes) {
     if (type === 'row') {
+        $('#loader-background').removeClass('hidden');
         state.table.rows(indexes).data().pluck('id').toArray()
             .forEach(id => { // Remove from array
                 state.selectedIDs.splice(state.selectedIDs.indexOf(id), 1);
@@ -422,8 +427,10 @@ function updateChartView() {
     if (count === 0) {
         $('#select-stand-text').removeClass('hidden');
         $('#graph').addClass('hidden');
+    } else if (count > 50) {
+        $('#too-many-text').removeClass('hidden');
+        $('#graph').addClass('hidden');
     } else {
-        $('#select-stand-text').addClass('hidden');
         $('#graph').removeClass('hidden');
         const timeData = state.timeData;
         const byDate = {};
@@ -471,14 +478,15 @@ function updateChartView() {
                     strokeBorderWidth: 1,
 
                     highlightSeriesOpts: {
-                        strokeWidth: 1.5,
-                        strokeBorderWidth: 1.5,
+                        strokeWidth: 1.2,
+                        strokeBorderWidth: 1.2,
                         highlightCircleSize: 2
                     }
                 }
             );
         }
     }
+    $('#loader-background').addClass('hidden');
 }
 
 function updateMapView() {
@@ -609,7 +617,9 @@ function changeYear(year) {
     state.selectedIDs.forEach(id => {
         let useID = id;
         const alias = findAlias(id, year);
-        if (alias) useID = alias;
+        if (alias) {
+            useID = alias;
+        }
         if (state.stands[useID]) {
             toSelect.push(useID);
         } else {

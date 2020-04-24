@@ -70,3 +70,10 @@ h1,h2,h3 {
 #loader-spinner {
     margin-top: 5vh;
 }
+
+#alert-box {
+    z-index: 9999;
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+}

@@ -403,7 +403,14 @@ function onTableSelect(e, dt, type, indexes) {
         loadTimeDataMany(selected, updateChartView);
         // Remove selected from another year that would now be deselected.
         if (state.selectedIDs.length === 1) state.missingSelected = [];
-        updateMapView();
+        const selectedCount = state.selectedIDs.length;
+        if (selectedCount > 100 && state.showPopups) {
+            $('#popupSwitch').click();
+            state.showPopups = false;
+            showAlert('Automatically disabled labels to improve render performance.', 5000, 'warning')
+        } else {
+            updateMapView();
+        }
     }
 }
 

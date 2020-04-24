@@ -6,6 +6,9 @@
 </head>
 <body>
 <div class="content">
+    <div id="alert-box">
+        <div></div>
+    </div>
     <!-- Introduction -->
     <div class="row">
         <div class="col-md-9">
@@ -99,6 +102,19 @@
 <script src="stands.js" charset="UTF-8"></script>
 
 <script>
+    let alerts = 0;
+
+    function showAlert(message, timeout, style) {
+        const alertID = `alert-${alerts}`;
+        $('#alert-box').append(
+            `<div id="${alertID}" class="alert alert-${style ? style : 'secondary'} fade show" role="alert">` +
+            `${message}` +
+            `</div>`
+        );
+        setTimeout(() => $(`#${alertID}`).alert('close'), timeout ? timeout : 1950);
+        alerts++;
+    }
+
     // Source: https://digitransit.fi/en/developers/apis/3-map-api/background-map/
     const map = L.map('map', {closePopupOnClick: false}).setView([60.192059, 24.945831], 13);
 

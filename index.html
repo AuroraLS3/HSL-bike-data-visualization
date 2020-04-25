@@ -49,6 +49,14 @@
                         </div>
                         <div id="graph" style="height: 27.5vh; width: 100%;"></div>
                     </div>
+                    <div class="hidden" id="bar-container" style="width: 100%;">
+                        <canvas aria-label="bar chart" height="20.5vh" id="barChart" role="img" width="100%"></canvas>
+                        <div class="slider">
+                            <label for="timeSlider" id="slider-label">Date</label>
+                            <input aria-labelledby="slider-label" class="slider" id="timeSlider" max="2100" min="0"
+                                   style="width: 100%;" type="range" value="0">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -168,7 +176,8 @@
         src="https://cdn.datatables.net/v/bs4/dt-1.10.20/r-2.2.3/sc-2.0.1/sp-1.0.1/sl-1.3.1/datatables.min.js"></script>
 
 <!-- Charts -->
-<!--<script src="https://cdn.zingchart.com/zingchart.min.js"></script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.css"></script>
 <!--<script src="https://d3js.org/d3.v5.min.js" crossorigin="anonymous"></script>-->
 <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.js"></script>
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.css"/>

@@ -1,3 +1,8 @@
+const Mode = {
+    LINE: 'line',
+    BAR: 'bar'
+};
+
 const state = {
     stands: {},
     standsById: {},
@@ -9,7 +14,9 @@ const state = {
     year: -1,
     timeData: {},
     standsOnChart: 0,
-    hueForGeneration: Math.random()
+    hueForGeneration: Math.random(),
+    mode: Mode.LINE,
+    slider: 0
 };
 const style = {};
 
@@ -427,6 +434,44 @@ function onTableDeselect(e, dt, type, indexes) {
     }
 }
 
+function drawGraph(data, graphedIDs, count, maxValue) {
+    if (state.graph) {
+        state.graph.updateOptions({
+            'file': data,
+            labels: ['time', ...graphedIDs.map(id => state.stands[id].name)],
+            colors: getColors(count),
+            valueRange: [0, maxValue]
+        })
+    } else {
+        state.graph = new Dygraph(
+            document.getElementById("graph"),
+            data,
+            {
+                labels: ['time', ...graphedIDs.map(id => state.stands[id].name)],
+                colors: getColors(count),
+                customBars: false,
+                rollPeriod: 3,
+                ylabel: 'Average Available Bikes by Hour',
+                legend: 'always',
+                showRangeSelector: true,
+                rangeSelectorPlotStrokeColor: colorMaps.cold.single,
+                rangeSelectorPlotFillColor: "",
+                highlightCircleSize: 1,
+                strokeWidth: 1,
+                strokeBorderWidth: 1,
+                includeZero: true,
+                valueRange: [0, maxValue],
+
+                highlightSeriesOpts: {
+                    strokeWidth: 1.2,
+                    strokeBorderWidth: 1.2,
+                    highlightCircleSize: 2
+                }
+            }
+        );
+    }
+}
+
 function updateChartView() {
     const selectedIDs = state.selectedIDs;
     const count = selectedIDs.length;
@@ -434,15 +479,17 @@ function updateChartView() {
     if (count === 0) {
         $('#select-stand-text').removeClass('hidden');
         $('#graph-container').addClass('hidden');
+        $('#bar-container').addClass('hidden');
     } else if (count > 50) {
         $('#too-many-text').removeClass('hidden');
         $('#graph-container').addClass('hidden');
+        $('#bar-container').addClass('hidden');
     } else {
-        $('#graph-container').removeClass('hidden');
         const timeData = state.timeData;
-        const byDate = {};
         let graphedIDs = Object.keys(timeData);
+
         let maxValue = 0;
+        const byDate = {};
         graphedIDs.forEach(id => {
             timeData[id].forEach(entry => {
                 const date = entry[0];
@@ -454,52 +501,112 @@ function updateChartView() {
                 // - Uses smallest 'available' value
                 const existing = byDate[date][id] ? byDate[date][id] : null;
                 byDate[date][id] = existing ? Math.min(value, existing) : value;
+                // Inserts nulls in case some series is missing values to avoid irregular size arrays.
                 for (let graphedID of graphedIDs) {
                     if (!byDate[date][graphedID]) byDate[date][graphedID] = null;
                 }
             })
         });
         const data = Object.keys(byDate).map(key => [new Date(key), ...Object.values(byDate[key])]);
-        state.temp = data;
+        state.data = data;
+        state.maxValue = maxValue;
 
-        if (state.graph) {
-            state.graph.updateOptions({
-                'file': data,
-                labels: ['time', ...graphedIDs.map(id => state.stands[id].name)],
-                colors: getColors(count),
-                valueRange: [0, maxValue],
-            })
-        } else {
-            state.graph = new Dygraph(
-                document.getElementById("graph"),
-                data,
-                {
-                    labels: ['time', ...graphedIDs.map(id => state.stands[id].name)],
-                    colors: getColors(count),
-                    customBars: false,
-                    rollPeriod: 3,
-                    ylabel: 'Average Available Bikes by Hour',
-                    legend: 'always',
-                    showRangeSelector: true,
-                    rangeSelectorPlotStrokeColor: colorMaps.cold.single,
-                    rangeSelectorPlotFillColor: "",
-                    highlightCircleSize: 1,
-                    strokeWidth: 1,
-                    strokeBorderWidth: 1,
-                    includeZero: true,
-                    valueRange: [0, maxValue],
-
-                    highlightSeriesOpts: {
-                        strokeWidth: 1.2,
-                        strokeBorderWidth: 1.2,
-                        highlightCircleSize: 2
-                    }
-                }
-            );
+        switch (state.mode) {
+            case Mode.LINE:
+                $('#graph-container').removeClass('hidden');
+                drawGraph(data, graphedIDs, count, maxValue);
+                break;
+            case Mode.BAR:
+                $('#bar-container').removeClass('hidden');
+                $('#timeSlider').attr('max', data.length);
+                updateBarChart();
+                break;
+            default:
+                showAlert("Invalid mode selected: " + state.mode, "danger", 4000);
+                break;
         }
+
     }
     $('#loader-background').addClass('hidden');
 }
+
+function updateBarChart() {
+    const count = state.selectedIDs.length;
+    let entry = state.data[state.slider];
+    let date = entry[0].toISOString();
+    date = date.substr(0, 10) + ' ' + date.substr(11, 5);
+    $('#slider-label').text(date);
+
+    let d = [];
+    for (let i = 1; i < entry.length; i++) {
+        d.push(entry[i]);
+    }
+    let colors = getColors(count);
+    let labels = Object.keys(state.timeData).map(id => state.stands[id].name);
+    if (state.barChart) {
+        state.barChart.data = {
+            labels: labels,
+            datasets: [{
+                data: d,
+                fill: false,
+                backgroundColor: colors,
+                borderColor: colors,
+                borderWidth: 1
+            }]
+        };
+        state.barChart.update();
+    } else {
+        Chart.defaults.global.animation.duration = 0;
+        Chart.defaults.global.legend.display = false;
+        state.barChart = new Chart(document.getElementById("barChart"), {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: d,
+                    fill: false,
+                    backgroundColor: colors,
+                    borderColor: colors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true,
+                            suggestedMax: state.maxValue + 5
+                        }
+                    }]
+                },
+                "animation": {
+                    "duration": 1,
+                    "onComplete": function () {
+                        var chartInstance = this.chart, ctx = chartInstance.ctx;
+
+                        ctx.font = Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, Chart.defaults.global.defaultFontStyle, Chart.defaults.global.defaultFontFamily);
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+
+                        this.data.datasets.forEach(function (dataset, i) {
+                            const meta = chartInstance.controller.getDatasetMeta(i);
+                            meta.data.forEach(function (bar, index) {
+                                let text = dataset.data[index];
+                                text = text ? text.toFixed(2) : 0;
+                                ctx.fillText(text, bar._model.x, bar._model.y - 5);
+                            });
+                        });
+                    }
+                },
+            }
+        });
+    }
+}
+
+$('#timeSlider').on('input', e => {
+    state.slider = e.target.value;
+    updateBarChart();
+});
 
 function updateMapView() {
     const bikeStands = state.stands;

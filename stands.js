@@ -16,7 +16,8 @@ const state = {
     standsOnChart: 0,
     hueForGeneration: Math.random(),
     mode: Mode.LINE,
-    slider: 0
+    slider: 0,
+    playing: false
 };
 const style = {};
 
@@ -109,7 +110,7 @@ function randomHSVColor() {
     state.hueForGeneration += goldenRatioConjugate;
     const hue = (state.hueForGeneration) % 1;
     const saturation = 0.7;
-    const value = 0.7;
+    const value = 0.7 + (Math.random() / 10);
     return [hue, saturation, value]
 }
 
@@ -409,7 +410,13 @@ function onTableSelect(e, dt, type, indexes) {
         });
         loadTimeDataMany(selected, updateChartView);
         // Remove selected from another year that would now be deselected.
-        if (state.selectedIDs.length === 1) state.missingSelected = [];
+        if (state.selectedIDs.length === 1) {
+            state.missingSelected = [];
+            // Scroll to on table if only one is selected.
+            state.table.row((idx, data) => {
+                return data.id === state.selectedIDs[0];
+            }).scrollTo();
+        }
         const selectedCount = state.selectedIDs.length;
         if (selectedCount > 100 && state.showPopups) {
             $('#popupSwitch').click();
@@ -469,6 +476,7 @@ function drawGraph(data, graphedIDs, count, maxValue) {
                 }
             }
         );
+        zoomOnMonth();
     }
 }
 
@@ -538,6 +546,9 @@ function updateChartView() {
 }
 
 function updateBarChart() {
+    // Avoid going out of bounds
+    if (state.slider > state.data.length) state.slider = state.data.length - 1;
+
     const count = state.selectedIDs.length;
     let entry = state.data[state.slider];
     let date = entry[0].toISOString();
@@ -619,6 +630,7 @@ function updateMapView() {
     const bikeStands = state.stands;
     let filteredIDs = state.filteredIDs;
     let selectedIDs = state.selectedIDs;
+    const tooManySelected = selectedIDs.length > 50;
 
     let i = 0;
     const colors = getColors(selectedIDs.length);
@@ -629,10 +641,11 @@ function updateMapView() {
         const isSelected = selectedIDs.includes(stand.id);
 
         if (isSelected) {
+            let selectedColor = tooManySelected ? colorMaps.hot.single : colors[i];
             stand.marker.setStyle({
                 ...style.selectedCircle,
-                color: colors[i],
-                fillColor: colors[i]
+                color: selectedColor,
+                fillColor: selectedColor
             })
                 .setRadius(stand.marker.options.radius);
             if (state.showPopups) {
@@ -688,6 +701,12 @@ function zoomOnTimeFrame(windowMs) {
     }
 }
 
+function zoomOnStart(epochMs) {
+    if (state.graph) {
+        state.graph.updateOptions({dateWindow: [epochMs, epochMs + 2592000000]});
+    }
+}
+
 function zoomOnMonth() {
     zoomOnTimeFrame(2592000000);
 }
@@ -735,6 +754,7 @@ function createTable() {
 }
 
 function changeYear(year) {
+    pause();
     state.year = year;
     $('.season-btn').removeClass('current');
     $('#btn' + year).addClass('current');
@@ -789,6 +809,7 @@ function changeYear(year) {
     loadTimeDataMany(toSelect, () => {
         updateChartView();
         if (state.graph) state.graph.updateOptions({dateWindow: null});
+        zoomOnMonth();
     });
 
     updateMapView();
@@ -804,22 +825,40 @@ function findAlias(id, year) {
 }
 
 function chooseLine() {
+    pause();
     state.mode = Mode.LINE;
     updateModeButtons();
     updateChartView();
+    if (state.slider < state.data.length) {
+        zoomOnStart(state.data[state.slider][0].getTime());
+    }
 }
 
 function chooseBar() {
     state.mode = Mode.BAR;
     updateModeButtons();
     updateChartView();
+    if (state.graph) {
+        const start = (state.graph.dateWindow_ && state.graph.dateWindow_[0])
+            ? state.graph.dateWindow_[0] : state.graph.rawData_[0][0];
+        let dateIndex = 0;
+        for (let i = 0; i < state.data.length; i++) {
+            let time = state.data[i][0].getTime();
+            if (start <= time) {
+                dateIndex = i;
+                break;
+            }
+        }
+        state.slider = dateIndex;
+        updateSlider();
+        updateBarChart();
+    }
 }
 
 const lineButton = $('#choose-line');
 const barButton = $('#choose-bar');
 
 function updateModeButtons() {
-    console.log("Click");
     let enabledClass = 'btn-outline-primary';
     let disabledClass = 'btn-outline-secondary';
     switch (state.mode) {
@@ -838,3 +877,52 @@ function updateModeButtons() {
 
 lineButton.click(chooseLine);
 barButton.click(chooseBar);
+
+const playPauseButton = $('#play-pause');
+
+function play() {
+    if (state.playing) return;
+    state.playing = true;
+    playPauseButton.empty().append('<i class="fa fa-pause-circle"></i> Pause');
+    step();
+}
+
+function pause() {
+    if (!state.playing) return;
+    state.playing = false;
+    playPauseButton.empty().append('<i class="fa fa-play-circle"></i> Play');
+}
+
+function togglePlay() {
+    if (state.playing) {
+        pause();
+    } else {
+        play();
+    }
+}
+
+function updateSlider() {
+    $('#timeSlider').val(state.slider);
+}
+
+function step() {
+    try {
+        if (!state.playing) {
+            return;
+        }
+        state.slider++;
+        if (state.slider > state.data.length) {
+            pause();
+            return;
+        }
+        updateSlider();
+        updateBarChart();
+        setTimeout(step, 65);
+    } catch (error) {
+        pause();
+        showAlert('Playback stopped due to error', 4000, 'danger');
+        throw error;
+    }
+}
+
+playPauseButton.click(togglePlay);

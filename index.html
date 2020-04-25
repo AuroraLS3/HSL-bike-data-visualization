@@ -57,8 +57,7 @@
                         </div>
                     </div>
                     <div class="text-center text-black-50 hidden" id="select-stand-text">Select a bike stand</div>
-                    <div class="text-center text-black-50 hidden" id="too-many-text">Up to 50 stands can be shown on
-                        line graph.
+                    <div class="text-center text-black-50 hidden" id="too-many-text">Up to 50 stands can be graphed.
                         Select fewer stands.
                     </div>
                     <div class="hidden" id="graph-container">
@@ -70,11 +69,15 @@
                         <div id="graph" style="height: 27.5vh; width: 100%;"></div>
                     </div>
                     <div class="hidden" id="bar-container" style="width: 100%;">
-                        <canvas aria-label="bar chart" height="20.5vh" id="barChart" role="img" width="100%"></canvas>
+                        <canvas aria-label="bar chart" height="21.5vh" id="barChart" role="img" width="100%"></canvas>
                         <div class="slider">
                             <label for="timeSlider" id="slider-label">Date</label>
-                            <input aria-labelledby="slider-label" class="slider" id="timeSlider" max="2100" min="0"
-                                   style="width: 100%;" type="range" value="0">
+                            <button class="btn btn-outline-secondary float-left" id="play-pause"><i
+                                    class="fa fa-play-circle"></i> Play
+                            </button>
+                            <input aria-labelledby="slider-label" class="mt-1 float-right slider" id="timeSlider"
+                                   max="2100" min="0"
+                                   style="width: 90%;" type="range" value="0">
                         </div>
                     </div>
                 </div>

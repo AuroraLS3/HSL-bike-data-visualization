@@ -116,7 +116,7 @@ function randomHSVColor() {
 function getColors(howMany) {
     switch (howMany) {
         case 1:
-            return [colorMaps.cold.single];
+            return [colorMaps.cold.more[5]];
         case 2:
             return [colorMaps.cold.more[2], colorMaps.cold.more[6]];
         case 3:
@@ -310,7 +310,7 @@ function onMapSelectSquare(event) {
     }
     const selected = [];
     const deselected = [];
-    for (let id of Object.keys(state.stands)) {
+    for (let id of Object.keys(state.stands).sort()) {
         if (bounds.contains(state.stands[id].marker.getLatLng())) {
             if (state.selectedIDs.includes(id)) {
                 deselected.push(id);
@@ -476,17 +476,19 @@ function updateChartView() {
     const selectedIDs = state.selectedIDs;
     const count = selectedIDs.length;
     state.standsOnChart = count;
+    let graphContainer = $('#graph-container');
+    let barContainer = $('#bar-container');
     if (count === 0) {
         $('#select-stand-text').removeClass('hidden');
-        $('#graph-container').addClass('hidden');
-        $('#bar-container').addClass('hidden');
+        graphContainer.addClass('hidden');
+        barContainer.addClass('hidden');
     } else if (count > 50) {
         $('#too-many-text').removeClass('hidden');
-        $('#graph-container').addClass('hidden');
-        $('#bar-container').addClass('hidden');
+        graphContainer.addClass('hidden');
+        barContainer.addClass('hidden');
     } else {
         const timeData = state.timeData;
-        let graphedIDs = Object.keys(timeData);
+        let graphedIDs = Object.keys(timeData).sort();
 
         let maxValue = 0;
         const byDate = {};
@@ -507,17 +509,22 @@ function updateChartView() {
                 }
             })
         });
-        const data = Object.keys(byDate).map(key => [new Date(key), ...Object.values(byDate[key])]);
+        const data = Object.keys(byDate).map(date => {
+            const standLabels = Object.entries(byDate[date]).sort((a, b) => a[0].localeCompare(b[0])).map(e => e[1]);
+            return [new Date(date), ...standLabels]
+        });
         state.data = data;
         state.maxValue = maxValue;
 
         switch (state.mode) {
             case Mode.LINE:
-                $('#graph-container').removeClass('hidden');
+                barContainer.addClass('hidden');
+                graphContainer.removeClass('hidden');
                 drawGraph(data, graphedIDs, count, maxValue);
                 break;
             case Mode.BAR:
-                $('#bar-container').removeClass('hidden');
+                graphContainer.addClass('hidden');
+                barContainer.removeClass('hidden');
                 $('#timeSlider').attr('max', data.length);
                 updateBarChart();
                 break;
@@ -542,7 +549,7 @@ function updateBarChart() {
         d.push(entry[i]);
     }
     let colors = getColors(count);
-    let labels = Object.keys(state.timeData).map(id => state.stands[id].name);
+    let labels = Object.keys(state.timeData).sort().map(id => state.stands[id].name);
     if (state.barChart) {
         state.barChart.data = {
             labels: labels,
@@ -613,18 +620,25 @@ function updateMapView() {
     let filteredIDs = state.filteredIDs;
     let selectedIDs = state.selectedIDs;
 
-    for (let key of Object.keys(bikeStands)) {
+    let i = 0;
+    const colors = getColors(selectedIDs.length);
+    for (let key of Object.keys(bikeStands).sort()) {
         const stand = bikeStands[key];
         const hasNoFilter = !filteredIDs || !filteredIDs.length;
         const isVisible = hasNoFilter || filteredIDs.includes(stand.id);
         const isSelected = selectedIDs.includes(stand.id);
 
         if (isSelected) {
-            stand.marker.setStyle(style.selectedCircle)
+            stand.marker.setStyle({
+                ...style.selectedCircle,
+                color: colors[i],
+                fillColor: colors[i]
+            })
                 .setRadius(stand.marker.options.radius);
             if (state.showPopups) {
                 stand.marker.openPopup();
             }
+            i++;
         } else {
             stand.marker.closePopup();
             if (isVisible) {
@@ -667,7 +681,6 @@ function zoomToBounds(bounds) {
 }
 
 function zoomOnTimeFrame(windowMs) {
-    console.log("Click");
     if (state.graph) {
         const start = (state.graph.dateWindow_ && state.graph.dateWindow_[0])
             ? state.graph.dateWindow_[0] : state.graph.rawData_[0][0];
@@ -683,13 +696,13 @@ function zoomOnWeek() {
     zoomOnTimeFrame(604800000);
 }
 
-function zoomOnDay() {
-    zoomOnTimeFrame(86400000);
+function zoomOnAllTime() {
+    if (state.graph) state.graph.updateOptions({dateWindow: null});
 }
 
 $('#zoomOnMonth').click(zoomOnMonth);
 $('#zoomOnWeek').click(zoomOnWeek);
-$('#zoomOnDay').click(zoomOnDay);
+$('#zoomOnAll').click(zoomOnAllTime);
 
 function createTable() {
     const table = $('#stands').DataTable({
@@ -734,7 +747,7 @@ function changeYear(year) {
     for (let id of Object.keys(state.stands)) {
         const stand = state.stands[id];
 
-        const markerContent = stand.id + ' : ' + stand.name;
+        const markerContent = stand.name;
         stand.marker = L.circle([stand.y, stand.x], style.visibleCircle)
             .addTo(map)
             .bindPopup(markerContent, {autoClose: false, closeButton: false, closeOnEscapeKey: false})
@@ -789,3 +802,39 @@ function findAlias(id, year) {
     }
     return null;
 }
+
+function chooseLine() {
+    state.mode = Mode.LINE;
+    updateModeButtons();
+    updateChartView();
+}
+
+function chooseBar() {
+    state.mode = Mode.BAR;
+    updateModeButtons();
+    updateChartView();
+}
+
+const lineButton = $('#choose-line');
+const barButton = $('#choose-bar');
+
+function updateModeButtons() {
+    console.log("Click");
+    let enabledClass = 'btn-outline-primary';
+    let disabledClass = 'btn-outline-secondary';
+    switch (state.mode) {
+        case Mode.LINE:
+            lineButton.addClass(enabledClass).removeClass(disabledClass);
+            barButton.removeClass(enabledClass).addClass(disabledClass);
+            break;
+        case Mode.BAR:
+            lineButton.removeClass(enabledClass).addClass(disabledClass);
+            barButton.addClass(enabledClass).removeClass(disabledClass);
+            break;
+        default:
+            break;
+    }
+}
+
+lineButton.click(chooseLine);
+barButton.click(chooseBar);

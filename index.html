@@ -41,7 +41,14 @@
                         line graph.
                         Select fewer stands.
                     </div>
-                    <div id="graph" style="height: 27.5vh; width: 100%;"></div>
+                    <div class="hidden" id="graph-container">
+                        <div class="graph-time-buttons">
+                            <button id="zoomOnMonth">30d</button>
+                            <button id="zoomOnWeek">7d</button>
+                            <button id="zoomOnDay">24h</button>
+                        </div>
+                        <div id="graph" style="height: 27.5vh; width: 100%;"></div>
+                    </div>
                 </div>
             </div>
         </div>

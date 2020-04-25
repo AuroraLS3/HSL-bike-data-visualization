@@ -433,19 +433,21 @@ function updateChartView() {
     state.standsOnChart = count;
     if (count === 0) {
         $('#select-stand-text').removeClass('hidden');
-        $('#graph').addClass('hidden');
+        $('#graph-container').addClass('hidden');
     } else if (count > 50) {
         $('#too-many-text').removeClass('hidden');
-        $('#graph').addClass('hidden');
+        $('#graph-container').addClass('hidden');
     } else {
-        $('#graph').removeClass('hidden');
+        $('#graph-container').removeClass('hidden');
         const timeData = state.timeData;
         const byDate = {};
         let graphedIDs = Object.keys(timeData);
+        let maxValue = 0;
         graphedIDs.forEach(id => {
             timeData[id].forEach(entry => {
                 const date = entry[0];
                 const value = entry[1];
+                if (value > maxValue) maxValue = value;
                 if (!byDate[date]) byDate[date] = {};
                 // Attempts to keep data intact
                 // - Only keeps one entry per id per date
@@ -464,7 +466,8 @@ function updateChartView() {
             state.graph.updateOptions({
                 'file': data,
                 labels: ['time', ...graphedIDs.map(id => state.stands[id].name)],
-                colors: getColors(count)
+                colors: getColors(count),
+                valueRange: [0, maxValue],
             })
         } else {
             state.graph = new Dygraph(
@@ -483,6 +486,8 @@ function updateChartView() {
                     highlightCircleSize: 1,
                     strokeWidth: 1,
                     strokeBorderWidth: 1,
+                    includeZero: true,
+                    valueRange: [0, maxValue],
 
                     highlightSeriesOpts: {
                         strokeWidth: 1.2,
@@ -553,6 +558,31 @@ function zoomOnAll() {
 function zoomToBounds(bounds) {
     map.flyToBounds(bounds, {animate: true, easeLinearity: 0.1, duration: 1.5});
 }
+
+function zoomOnTimeFrame(windowMs) {
+    console.log("Click");
+    if (state.graph) {
+        const start = (state.graph.dateWindow_ && state.graph.dateWindow_[0])
+            ? state.graph.dateWindow_[0] : state.graph.rawData_[0][0];
+        state.graph.updateOptions({dateWindow: [start, start + windowMs]});
+    }
+}
+
+function zoomOnMonth() {
+    zoomOnTimeFrame(2592000000);
+}
+
+function zoomOnWeek() {
+    zoomOnTimeFrame(604800000);
+}
+
+function zoomOnDay() {
+    zoomOnTimeFrame(86400000);
+}
+
+$('#zoomOnMonth').click(zoomOnMonth);
+$('#zoomOnWeek').click(zoomOnWeek);
+$('#zoomOnDay').click(zoomOnDay);
 
 function createTable() {
     const table = $('#stands').DataTable({

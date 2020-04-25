@@ -81,3 +81,11 @@ h1,h2,h3 {
 .modal img {
     width: 100%;
 }
+
+.graph-time-buttons {
+    position: absolute;
+    top: 1px;
+    left: 3.6rem;
+    z-index: 50;
+    font-size: smaller;
+}

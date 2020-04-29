@@ -143,10 +143,6 @@ function loadStandsOfYear(year) {
     }
 }
 
-function printStands(id) {
-    console.log(state.standsById[id])
-}
-
 function isEqual(obj1, obj2) {
     if (!isEqualArray(Object.keys(obj1), Object.keys(obj2))) return false;
     for (let key of Object.keys(obj1)) {
@@ -537,20 +533,20 @@ function updateChartView() {
                 updateBarChart();
                 break;
             default:
-                showAlert("Invalid mode selected: " + state.mode, "danger", 4000);
+                showAlert("Invalid mode selected: " + state.mode, 4000, "danger");
                 break;
         }
-
     }
     $('#loader-background').addClass('hidden');
 }
 
 function updateBarChart() {
     // Avoid going out of bounds
-    if (state.slider > state.data.length) state.slider = state.data.length - 1;
+    if (state.slider >= state.data.length) state.slider = state.data.length - 1;
 
     const count = state.selectedIDs.length;
     let entry = state.data[state.slider];
+
     let date = entry[0].toISOString();
     date = date.substr(0, 10) + ' ' + date.substr(11, 5);
     $('#slider-label').text(date);
@@ -754,7 +750,6 @@ function createTable() {
 }
 
 function changeYear(year) {
-    pause();
     state.year = year;
     $('.season-btn').removeClass('current');
     $('#btn' + year).addClass('current');
@@ -811,6 +806,8 @@ function changeYear(year) {
         if (state.graph) state.graph.updateOptions({dateWindow: null});
         zoomOnMonth();
     });
+    state.slider = 0;
+    updateSlider();
 
     updateMapView();
     // Reset Zoom
@@ -911,7 +908,7 @@ function step() {
             return;
         }
         state.slider++;
-        if (state.slider > state.data.length) {
+        if (state.slider >= state.data.length) {
             pause();
             return;
         }

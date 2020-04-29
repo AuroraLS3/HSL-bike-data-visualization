@@ -37,7 +37,8 @@
                     <button class="mt-2 col-12 btn btn-outline-secondary btn-lg season-btn" id="btn2017"
                             onclick="changeYear(2017)">2017
                     </button>
-                    <div aria-label="Chart mode" class="btn-group btn-group-lg mt-2" role="group">
+                    <div aria-label="Chart mode" class="mt-2 col-12 btn-group btn-group-lg" role="group"
+                         style="padding: 0;">
                         <button class="btn btn-outline-primary" id="choose-line" type="button"><i
                                 class="fa fa-chart-line"></i> line
                         </button>
@@ -62,9 +63,9 @@
                     </div>
                     <div class="hidden" id="graph-container">
                         <div class="graph-time-buttons">
-                            <button id="zoomOnAll">365d</button>
-                            <button id="zoomOnMonth">30d</button>
-                            <button id="zoomOnWeek">7d</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="zoomOnAll">365d</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="zoomOnMonth">30d</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="zoomOnWeek">7d</button>
                         </div>
                         <div id="graph" style="height: 27.5vh; width: 100%;"></div>
                     </div>
@@ -96,10 +97,10 @@
         </div>
     </div>
 
-    <button class="btn color-primary" data-target="#exampleModal" data-toggle="modal"
-            style="position: fixed; bottom: 1rem; left: 1rem;" type="button">
+    <a class="btn color-primary" data-target="#exampleModal" data-toggle="modal"
+       style="position: fixed; bottom: 1rem; left: 0.5rem;" type="button">
         <i class="far fa-2x fa-question-circle"></i>
-    </button>
+    </a>
 </div>
 
 <!-- Modal -->
@@ -154,7 +155,7 @@
                 <hr>
                 <div class="row">
                     <div class="col-md-6">
-                        <p>Selected bike stands are drawn on chart chart.</p>
+                        <p>Selected bike stands are drawn on the chart.</p>
                         <p>Series can be zoomed and panned with the controls below the chart. Hover over series to see
                             available bikes.</p>
                     </div>
@@ -165,9 +166,9 @@
                 <hr>
                 <div class="row">
                     <div class="col-md-6">
-                        <p>You can switch between line and bar chart view at any time. The time selectors are
-                            linked.</p>
-                        <p>Bar chart view allows playback of the data.</p>
+                        <p>You can switch between line and bar chart view at any time. Bar chart view allows playback of
+                            the data.</p>
+                        <p>The time selectors are linked.</p>
                     </div>
                     <div class="col-md-6">
                         <img alt="Example of shift map selection" loading="lazy" src="img/line-bar-switch.gif">

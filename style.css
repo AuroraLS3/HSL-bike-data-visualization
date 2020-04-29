@@ -59,7 +59,7 @@ h1,h2,h3 {
 }
 
 #loader-background {
-    z-index: 5;
+    z-index: 500;
     background-color: rgba(0, 0, 0, 0.14);
     position: absolute;
     top: 0;
@@ -84,10 +84,19 @@ h1,h2,h3 {
 
 .graph-time-buttons {
     position: absolute;
-    top: 1px;
+    top: 2px;
     left: 3.6rem;
     z-index: 50;
     font-size: smaller;
+}
+
+.graph-time-buttons button {
+    background-color: #fefefe;
+}
+
+.graph-time-buttons button:focus {
+    outline: none;
+    box-shadow: none;
 }
 
 #slider-label {

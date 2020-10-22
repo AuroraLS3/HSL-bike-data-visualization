@@ -21,6 +21,8 @@ Sources & Licenses:
   - [jQuery Datatables](https://datatables.net/) | [`MIT license`](https://datatables.net/license/mit)
   - [loaders.css](https://github.com/ConnorAtherton/loaders.css) | [`MIT license`](https://github.com/ConnorAtherton/loaders.css/blob/master/README.md)
   - [Gradle](https://gradle.org) | [`Apache License 2.0`](https://github.com/gradle/gradle/blob/master/LICENSE)
+  - [Dygraphs](https://dygraphs.com/) | [`MIT license`](https://dygraphs.com/legal.html)
+  - [Chart.js](https://www.chartjs.org/) | [`MIT license`](https://github.com/chartjs/Chart.js/blob/master/LICENSE.md)
 ----
 
 Code in this repository is licensed under MIT License.

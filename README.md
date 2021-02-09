@@ -3,7 +3,7 @@ Interactive Data Visualization course project work.
 Contains an interactive visualization for Helsinki bike data in years 2017-2019
 
 Available at 
-https://rsl1122.github.io/HSL-bike-data-visualization/
+https://aurorals3.github.io/HSL-bike-data-visualization/
 
 ----
 
